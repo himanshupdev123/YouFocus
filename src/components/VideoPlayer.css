@@ -1,0 +1,157 @@
+/**
+ * VideoPlayer Component Styles
+ * 
+ * Provides a distraction-free, full-screen video viewing experience
+ * with minimal UI elements and clean design.
+ */
+
+.video-player-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #000;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.video-player-header {
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.close-button {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.close-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.close-button:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.video-player-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+.player-wrapper {
+    width: 100%;
+    max-width: 1280px;
+    aspect-ratio: 16 / 9;
+    background-color: #000;
+}
+
+.player-wrapper #youtube-player {
+    width: 100%;
+    height: 100%;
+}
+
+/* Loading state */
+.player-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: #fff;
+}
+
+.player-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.player-loading p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Error state */
+.player-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: #fff;
+    text-align: center;
+    padding: 2rem;
+}
+
+.player-error p {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.player-error button {
+    background-color: #fff;
+    color: #000;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.player-error button:hover {
+    background-color: #e0e0e0;
+}
+
+.player-error button:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .video-player-header {
+        padding: 0.75rem;
+    }
+
+    .close-button {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+
+    .video-player-content {
+        padding: 0.5rem;
+    }
+
+    .player-wrapper {
+        max-width: 100%;
+    }
+}
+
+/* Ensure player is accessible */
+.video-player-container:focus-within {
+    outline: none;
+}

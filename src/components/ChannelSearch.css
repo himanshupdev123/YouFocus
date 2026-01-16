@@ -1,0 +1,200 @@
+/**
+ * ChannelSearch Component Styles
+ * Clean, minimal, distraction-free design
+ */
+
+.channel-search {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Search Input */
+.search-input-container {
+    margin-bottom: 1.5rem;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s ease;
+    font-family: inherit;
+}
+
+.search-input:focus {
+    border-color: #4285f4;
+}
+
+.search-input::placeholder {
+    color: #999;
+}
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #4285f4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error Message */
+.error-message {
+    padding: 1rem;
+    background-color: #fee;
+    border: 1px solid #fcc;
+    border-radius: 8px;
+    color: #c33;
+    margin-bottom: 1rem;
+}
+
+.error-message p {
+    margin: 0;
+}
+
+/* Search Results */
+.search-results {
+    margin-top: 1rem;
+}
+
+.channel-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.channel-item {
+    margin-bottom: 0.5rem;
+}
+
+.channel-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    font-family: inherit;
+}
+
+.channel-button:hover:not(:disabled) {
+    border-color: #4285f4;
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.channel-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.channel-item.selected .channel-button {
+    border-color: #34a853;
+    background-color: #f0f8f4;
+}
+
+.channel-thumbnail {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.channel-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.channel-title {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #202124;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.channel-subscribers {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #5f6368;
+}
+
+.selected-badge {
+    color: #34a853;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+/* No Results */
+.no-results {
+    padding: 2rem;
+    text-align: center;
+    color: #666;
+}
+
+.no-results p {
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .channel-search {
+        max-width: 100%;
+    }
+
+    .channel-thumbnail {
+        width: 50px;
+        height: 50px;
+    }
+
+    .channel-title {
+        font-size: 0.9rem;
+    }
+
+    .channel-subscribers {
+        font-size: 0.8rem;
+    }
+}
+
+/* Touch-friendly tap targets for mobile */
+@media (max-width: 768px) {
+    .channel-button {
+        min-height: 44px;
+        padding: 1rem 0.75rem;
+    }
+}

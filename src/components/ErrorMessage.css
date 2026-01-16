@@ -1,0 +1,145 @@
+/**
+ * ErrorMessage Component Styles
+ * 
+ * Provides styling for error messages with different sizes and states.
+ * Follows the calm, distraction-free design aesthetic.
+ */
+
+.error-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #991b1b;
+    margin: 1rem 0;
+}
+
+.error-message--small {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.error-message--medium {
+    padding: 1rem;
+    font-size: 1rem;
+}
+
+.error-message--large {
+    padding: 1.5rem;
+    font-size: 1.125rem;
+}
+
+.error-message__icon {
+    flex-shrink: 0;
+    color: #dc2626;
+}
+
+.error-message--small .error-message__icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.error-message--medium .error-message__icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.error-message--large .error-message__icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.error-message__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.error-message__title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1em;
+    font-weight: 600;
+    color: #991b1b;
+}
+
+.error-message__text {
+    margin: 0 0 0.5rem 0;
+    color: #7f1d1d;
+    line-height: 1.5;
+}
+
+.error-message__hint {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.875em;
+    color: #991b1b;
+    opacity: 0.8;
+}
+
+.error-message__actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    align-items: flex-start;
+}
+
+.error-message__button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.error-message__button--retry {
+    background-color: #dc2626;
+    color: white;
+}
+
+.error-message__button--retry:hover {
+    background-color: #b91c1c;
+}
+
+.error-message__button--retry:active {
+    background-color: #991b1b;
+}
+
+.error-message__button--dismiss {
+    background-color: transparent;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.error-message__button--dismiss:hover {
+    background-color: #fee2e2;
+}
+
+.error-message__button--dismiss:active {
+    background-color: #fecaca;
+}
+
+.error-message__button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .error-message {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .error-message__actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .error-message__button {
+        width: 100%;
+    }
+}
