@@ -35,19 +35,49 @@ function App() {
   const storageManager = useMemo(() => new StorageManager(), []);
 
   const apiClient = useMemo(() => {
-    // Get API key from environment variable
-    const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY || '';
+    // Get API keys from environment variables
+    const apiKeys: string[] = [];
 
-    if (!apiKey) {
-      console.warn('YouTube API key not configured. Set VITE_YOUTUBE_API_KEY in .env file.');
+    // Primary API key (required)
+    const primaryKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+    if (primaryKey) {
+      apiKeys.push(primaryKey);
     }
 
-    return new YouTubeAPIClient({ apiKey });
+    // Additional API keys (optional)
+    for (let i = 2; i <= 5; i++) {
+      const key = import.meta.env[`VITE_YOUTUBE_API_KEY_${i}`];
+      if (key) {
+        apiKeys.push(key);
+      }
+    }
+
+    if (apiKeys.length === 0) {
+      console.warn('No YouTube API keys configured. Set VITE_YOUTUBE_API_KEY in .env file.');
+      // Return client with empty array - will fail gracefully
+      return new YouTubeAPIClient({ apiKeys: [''] });
+    }
+
+    console.log(`Initialized YouTube API client with ${apiKeys.length} API key(s)`);
+    return new YouTubeAPIClient({ apiKeys });
   }, []);
 
   // Application state
   const [currentView, setCurrentView] = useState<AppView>('onboarding');
   const [channels, setChannels] = useState<Channel[]>([]);
+
+  // Add API key monitoring (development only)
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // Log API key status every 5 minutes in development
+      const interval = setInterval(() => {
+        const status = apiClient.getKeyManagerStatus();
+        console.log('API Key Status:', status);
+      }, 5 * 60 * 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [apiClient]);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
