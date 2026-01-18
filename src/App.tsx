@@ -35,17 +35,31 @@ function App() {
   const storageManager = useMemo(() => new StorageManager(), []);
 
   const apiClient = useMemo(() => {
-    // Get primary API key from environment variables
-    const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+    // Get API keys from environment variables
+    const apiKeys: string[] = [];
 
-    if (!apiKey) {
-      console.warn('No YouTube API key configured. Set VITE_YOUTUBE_API_KEY in .env file.');
+    // Primary API key (required)
+    const primaryKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+    if (primaryKey) {
+      apiKeys.push(primaryKey);
+    }
+
+    // Additional API keys (optional)
+    for (let i = 2; i <= 5; i++) {
+      const key = import.meta.env[`VITE_YOUTUBE_API_KEY_${i}`];
+      if (key) {
+        apiKeys.push(key);
+      }
+    }
+
+    if (apiKeys.length === 0) {
+      console.warn('No YouTube API keys configured. Set VITE_YOUTUBE_API_KEY in .env file.');
       // Return client with empty key - will fail gracefully
       return new YouTubeAPIClient({ apiKey: '' });
     }
 
-    console.log('Initialized YouTube API client with single API key');
-    return new YouTubeAPIClient({ apiKey });
+    console.log(`Initialized YouTube API client with ${apiKeys.length} API key(s)`);
+    return new YouTubeAPIClient({ apiKeys } as any);
   }, []);
 
   // Application state
