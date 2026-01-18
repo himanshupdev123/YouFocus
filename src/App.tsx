@@ -35,31 +35,19 @@ function App() {
   const storageManager = useMemo(() => new StorageManager(), []);
 
   const apiClient = useMemo(() => {
-    // Get API keys from environment variables
-    const apiKeys: string[] = [];
-
-    // Primary API key (required)
+    // Get primary API key from environment
     const primaryKey = import.meta.env.VITE_YOUTUBE_API_KEY;
-    if (primaryKey) {
-      apiKeys.push(primaryKey);
+
+    if (!primaryKey) {
+      console.warn('No YouTube API key configured. Set VITE_YOUTUBE_API_KEY in .env file.');
+      // Return client with empty key - will fail gracefully
+      return new YouTubeAPIClient({ apiKey: '' });
     }
 
-    // Additional API keys (optional)
-    for (let i = 2; i <= 5; i++) {
-      const key = import.meta.env[`VITE_YOUTUBE_API_KEY_${i}`];
-      if (key) {
-        apiKeys.push(key);
-      }
-    }
-
-    if (apiKeys.length === 0) {
-      console.warn('No YouTube API keys configured. Set VITE_YOUTUBE_API_KEY in .env file.');
-      // Return client with empty array - will fail gracefully
-      return new YouTubeAPIClient({ apiKeys: [''] });
-    }
-
-    console.log(`Initialized YouTube API client with ${apiKeys.length} API key(s)`);
-    return new YouTubeAPIClient({ apiKeys });
+    // For now, use single key format (legacy)
+    // TODO: Add multiple key support once TypeScript issues are resolved
+    console.log('Initialized YouTube API client with 1 API key');
+    return new YouTubeAPIClient({ apiKey: primaryKey });
   }, []);
 
   // Application state
@@ -71,8 +59,10 @@ function App() {
     if (import.meta.env.DEV) {
       // Log API key status every 5 minutes in development
       const interval = setInterval(() => {
-        const status = apiClient.getKeyManagerStatus();
-        console.log('API Key Status:', status);
+        // TODO: Re-enable when multiple key support is working
+        // const status = apiClient.getKeyManagerStatus();
+        // console.log('API Key Status:', status);
+        console.log('API Key monitoring disabled - single key mode');
       }, 5 * 60 * 1000);
 
       return () => clearInterval(interval);
