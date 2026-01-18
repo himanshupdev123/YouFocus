@@ -69,7 +69,10 @@ export class APIKeyManager {
             }
         }
 
-        return this.apiKeys[this.currentKeyIndex];
+        const key = this.apiKeys[this.currentKeyIndex];
+        console.log('PRODUCTION DEBUG: getCurrentKey returning:', key ? `${key.substring(0, 10)}...` : 'NULL');
+
+        return key;
     }
 
     /**

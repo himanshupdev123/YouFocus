@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Direct API Test</title>
+</head>
+
+<body>
+    <h1>Direct YouTube API Test</h1>
+    <button onclick="testAPI()">Test API Key 1</button>
+    <button onclick="testAPI2()">Test API Key 2</button>
+    <button onclick="testAPI3()">Test API Key 3</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const apiKey = 'AIzaSyCmnZDgRd9ldnttuWlr6fPWjcPdgjMtJIA';
+            await testWithKey(apiKey, 'API Key 1');
+        }
+
+        async function testAPI2() {
+            const apiKey = 'AIzaSyCJ_tC6QDqE05fYpVsmxzUv0GFfAQwnEEA';
+            await testWithKey(apiKey, 'API Key 2');
+        }
+
+        async function testAPI3() {
+            const apiKey = 'AIzaSyC1aKNF5dXXVWjFvQnMGYQorJfOoytz6ec';
+            await testWithKey(apiKey, 'API Key 3');
+        }
+
+        async function testWithKey(apiKey, keyName) {
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=test&maxResults=1&key=${apiKey}`;
+
+            console.log(`Testing ${keyName}:`, url);
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                document.getElementById('result').innerHTML = `
+                    <h2>${keyName} - Response Status: ${response.status}</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+
+                console.log(`${keyName} Response:`, data);
+            } catch (error) {
+                console.error(`${keyName} Error:`, error);
+                document.getElementById('result').innerHTML = `<h2>${keyName} Error: ${error.message}</h2>`;
+            }
+        }
+    </script>
+</body>
+
+</html>

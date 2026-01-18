@@ -35,39 +35,22 @@ function App() {
   const storageManager = useMemo(() => new StorageManager(), []);
 
   const apiClient = useMemo(() => {
-    // Get primary API key from environment
-    const primaryKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+    // Get primary API key from environment variables
+    const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
 
-    if (!primaryKey) {
+    if (!apiKey) {
       console.warn('No YouTube API key configured. Set VITE_YOUTUBE_API_KEY in .env file.');
       // Return client with empty key - will fail gracefully
       return new YouTubeAPIClient({ apiKey: '' });
     }
 
-    // For now, use single key format (legacy)
-    // TODO: Add multiple key support once TypeScript issues are resolved
-    console.log('Initialized YouTube API client with 1 API key');
-    return new YouTubeAPIClient({ apiKey: primaryKey });
+    console.log('Initialized YouTube API client with single API key');
+    return new YouTubeAPIClient({ apiKey });
   }, []);
 
   // Application state
   const [currentView, setCurrentView] = useState<AppView>('onboarding');
   const [channels, setChannels] = useState<Channel[]>([]);
-
-  // Add API key monitoring (development only)
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      // Log API key status every 5 minutes in development
-      const interval = setInterval(() => {
-        // TODO: Re-enable when multiple key support is working
-        // const status = apiClient.getKeyManagerStatus();
-        // console.log('API Key Status:', status);
-        console.log('API Key monitoring disabled - single key mode');
-      }, 5 * 60 * 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [apiClient]);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
