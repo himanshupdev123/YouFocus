@@ -17,9 +17,9 @@ export class APICache {
 
     /**
      * Creates a new APICache instance
-     * @param cacheDurationMs - Cache duration in milliseconds (default: 30 minutes)
+     * @param cacheDurationMs - Cache duration in milliseconds (default: 4 hours)
      */
-    constructor(cacheDurationMs: number = 30 * 60 * 1000) {
+    constructor(cacheDurationMs: number = 4 * 60 * 60 * 1000) {
         this.channelCache = new Map();
         this.videoCache = new Map();
         this.defaultCacheDuration = cacheDurationMs;

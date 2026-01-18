@@ -78,7 +78,7 @@ export class YouTubeAPIClient {
             throw this.createAPIError(400, 'Search query cannot be empty', 'Please enter a channel name to search', false);
         }
 
-        // Check cache first
+        // Check cache first - use longer cache for search results (24 hours)
         const cacheKey = `search:${query.toLowerCase().trim()}`;
         const cachedChannels = this.cache.getVideos(cacheKey);
         if (cachedChannels) {
@@ -109,8 +109,8 @@ export class YouTubeAPIClient {
             // Fetch full channel details to get subscriber counts and uploads playlist
             const channels = await this.getChannelsByIds(channelIds);
 
-            // Cache the results
-            this.cache.setVideos(cacheKey, channels as unknown as Video[]);
+            // Cache the results for 24 hours (search results change less frequently)
+            this.cache.setVideos(cacheKey, channels as unknown as Video[], 24 * 60 * 60 * 1000);
 
             return channels;
         } catch (error) {
@@ -400,7 +400,7 @@ export class YouTubeAPIClient {
                         return this.createAPIError(
                             403,
                             message,
-                            'YouTube API quota exceeded. Please try again later.',
+                            'YouTube API quota exceeded. The quota resets daily at midnight PST. Try again in a few hours or contact support for a premium API key.',
                             false
                         );
                     }
