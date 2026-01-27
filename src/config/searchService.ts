@@ -11,7 +11,7 @@ import type { SearchServiceConfig } from '../services/SearchService';
  * Get search service configuration based on environment
  */
 export function getSearchServiceConfig(): SearchServiceConfig | undefined {
-    // Check if search service is enabled
+    // Check if search service is enabled (default to true if not specified)
     const isEnabled = import.meta.env.REACT_APP_SEARCH_SERVICE_ENABLED !== 'false';
 
     if (!isEnabled) {
@@ -20,12 +20,12 @@ export function getSearchServiceConfig(): SearchServiceConfig | undefined {
     }
 
     // Get base URL from environment or use default
-    const baseUrl = import.meta.env.REACT_APP_SEARCH_SERVICE_URL || 'http://localhost:5000';
+    const baseUrl = import.meta.env.REACT_APP_SEARCH_SERVICE_URL || window.location.origin;
 
     // Get timeout from environment or use default
     const timeout = import.meta.env.REACT_APP_SEARCH_SERVICE_TIMEOUT
         ? parseInt(import.meta.env.REACT_APP_SEARCH_SERVICE_TIMEOUT, 10)
-        : 10000;
+        : 15000; // Increased default for serverless
 
     console.log(`Search service configured: ${baseUrl} (timeout: ${timeout}ms)`);
 
