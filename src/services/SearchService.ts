@@ -159,18 +159,43 @@ export class SearchService {
     async isHealthy(): Promise<boolean> {
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for health check
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // Increased to 10 seconds for serverless cold starts
 
             const response = await fetch(`${this.baseUrl}/api/health`, {
                 method: 'GET',
-                signal: controller.signal
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'application/json',
+                }
             });
 
             clearTimeout(timeoutId);
-            return response.ok;
+
+            if (!response.ok) {
+                console.warn(`Health check failed with status: ${response.status}`);
+                return false;
+            }
+
+            // Try to parse the response to ensure it's valid
+            const data = await response.json();
+            const isHealthy = data.status === 'healthy';
+
+            if (!isHealthy) {
+                console.warn('Health check returned unhealthy status:', data);
+            }
+
+            return isHealthy;
 
         } catch (error) {
-            console.warn('Health check failed:', error);
+            if (error instanceof Error) {
+                if (error.name === 'AbortError') {
+                    console.warn('Health check timed out after 10 seconds');
+                } else {
+                    console.warn('Health check failed:', error.message);
+                }
+            } else {
+                console.warn('Health check failed with unknown error:', error);
+            }
             return false;
         }
     }

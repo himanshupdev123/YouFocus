@@ -109,13 +109,8 @@ export class YouTubeAPIClient {
         // Try search service first (if available and enabled)
         if (this.searchService && this.useSearchService) {
             try {
-                const isHealthy = await this.searchService.isHealthy();
-                if (isHealthy) {
-                    console.log('Using SearchService for channel search (0 API quota)');
-                    return await this.searchChannelsViaService(query, cacheKey);
-                } else {
-                    console.warn('SearchService is not healthy, falling back to YouTube API');
-                }
+                console.log('Attempting to use SearchService for channel search (0 API quota)');
+                return await this.searchChannelsViaService(query, cacheKey);
             } catch (error) {
                 console.warn('SearchService failed, falling back to YouTube API:', error);
             }
