@@ -161,7 +161,7 @@ export class SearchService {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for health check
 
-            const response = await fetch(`${this.baseUrl}/health`, {
+            const response = await fetch(`${this.baseUrl}/api/health`, {
                 method: 'GET',
                 signal: controller.signal
             });
@@ -170,6 +170,7 @@ export class SearchService {
             return response.ok;
 
         } catch (error) {
+            console.warn('Health check failed:', error);
             return false;
         }
     }
