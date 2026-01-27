@@ -16,6 +16,7 @@ import { ErrorMessage } from './components/ErrorMessage';
 import { StorageManager } from './utils/StorageManager';
 import { YouTubeAPIClient } from './services/YouTubeAPIClient';
 import { validateApiKey } from './utils/validateApiKey';
+import { getSearchServiceConfig, shouldUseSearchService } from './config/searchService';
 import type { Channel } from './types';
 import './App.css';
 
@@ -43,7 +44,20 @@ function App() {
       return new YouTubeAPIClient({ apiKey: '' });
     }
 
-    return new YouTubeAPIClient({ apiKey });
+    // Get search service configuration
+    const searchService = getSearchServiceConfig();
+    const useSearchService = shouldUseSearchService();
+
+    console.log('Initializing YouTubeAPIClient with search service:', {
+      searchServiceEnabled: useSearchService,
+      searchServiceUrl: searchService?.baseUrl
+    });
+
+    return new YouTubeAPIClient({
+      apiKey,
+      searchService,
+      useSearchService
+    });
   }, []);
 
   // Application state

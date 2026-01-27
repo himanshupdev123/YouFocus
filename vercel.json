@@ -4,6 +4,14 @@
     "devCommand": "npm run dev",
     "installCommand": "npm install",
     "framework": "vite",
+    "functions": {
+        "api/search/channels.py": {
+            "runtime": "python3.9"
+        },
+        "api/search/videos.py": {
+            "runtime": "python3.9"
+        }
+    },
     "rewrites": [
         {
             "source": "/(.*)",
@@ -17,6 +25,23 @@
                 {
                     "key": "Cache-Control",
                     "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        },
+        {
+            "source": "/api/(.*)",
+            "headers": [
+                {
+                    "key": "Access-Control-Allow-Origin",
+                    "value": "*"
+                },
+                {
+                    "key": "Access-Control-Allow-Methods",
+                    "value": "GET, POST, OPTIONS"
+                },
+                {
+                    "key": "Access-Control-Allow-Headers",
+                    "value": "Content-Type"
                 }
             ]
         }

@@ -10,6 +10,7 @@
 
 import axios, { type AxiosInstance, AxiosError } from 'axios';
 import { APICache } from './APICache';
+import { SearchService, type SearchServiceConfig } from './SearchService';
 import type {
     Channel,
     Video,
@@ -33,6 +34,10 @@ export interface YouTubeAPIClientConfig {
     maxResults?: number;
     /** Time window for fetching videos in days (default: 30) */
     videoTimeWindowDays?: number;
+    /** Search service configuration for quota optimization */
+    searchService?: SearchServiceConfig;
+    /** Whether to use search service for channel searches (default: true) */
+    useSearchService?: boolean;
 }
 
 /**
@@ -45,16 +50,28 @@ export class YouTubeAPIClient {
     private readonly maxResults: number;
     private readonly videoTimeWindowDays: number;
     private readonly baseURL = 'https://www.googleapis.com/youtube/v3';
+    private readonly searchService?: SearchService;
+    private readonly useSearchService: boolean;
 
     /**
      * Creates a new YouTubeAPIClient instance
      * @param config - Configuration object
      */
     constructor(config: YouTubeAPIClientConfig) {
+        if (!config.apiKey || config.apiKey.trim().length === 0) {
+            throw new Error('YouTube API key is required');
+        }
+
         this.apiKey = config.apiKey;
         this.cache = config.cache ?? new APICache();
         this.maxResults = config.maxResults ?? 50;
         this.videoTimeWindowDays = config.videoTimeWindowDays ?? 30;
+        this.useSearchService = config.useSearchService ?? true;
+
+        // Initialize search service if configured
+        if (config.searchService && this.useSearchService) {
+            this.searchService = new SearchService(config.searchService);
+        }
 
         this.axiosInstance = axios.create({
             baseURL: this.baseURL,
@@ -67,7 +84,8 @@ export class YouTubeAPIClient {
 
     /**
      * Searches for YouTube channels by query
-     * Uses search.list endpoint (cost: 100 units per request)
+     * Uses hybrid approach: SearchService (0 quota) + YouTube API for details (1 unit per channel)
+     * Falls back to direct YouTube API search if SearchService is unavailable
      * 
      * @param query - Search query (channel name or keywords)
      * @returns Array of matching channels
@@ -80,6 +98,7 @@ export class YouTubeAPIClient {
 
         // Check cache first - use longer cache for search results (24 hours)
         const cacheKey = `search:${query.toLowerCase().trim()}`;
+
         const cachedChannels = this.cache.getVideos(cacheKey);
         if (cachedChannels) {
             // Cache stores Video[], but we're using it for Channel[] here
@@ -87,20 +106,105 @@ export class YouTubeAPIClient {
             return cachedChannels as unknown as Channel[];
         }
 
+        // Try search service first (if available and enabled)
+        if (this.searchService && this.useSearchService) {
+            try {
+                const isHealthy = await this.searchService.isHealthy();
+                if (isHealthy) {
+                    console.log('Using SearchService for channel search (0 API quota)');
+                    return await this.searchChannelsViaService(query, cacheKey);
+                } else {
+                    console.warn('SearchService is not healthy, falling back to YouTube API');
+                }
+            } catch (error) {
+                console.warn('SearchService failed, falling back to YouTube API:', error);
+            }
+        }
+
+        // Fallback to direct YouTube API search
+        console.log('Using YouTube API for channel search (100 API quota)');
+        return await this.searchChannelsViaAPI(query, cacheKey);
+    }
+
+    /**
+     * Search channels using the Python search service (0 API quota)
+     * @param query - Search query
+     * @param cacheKey - Cache key for storing results
+     * @returns Array of channels with full details
+     */
+    private async searchChannelsViaService(query: string, cacheKey: string): Promise<Channel[]> {
         try {
-            const response = await this.axiosInstance.get<YouTubeAPIResponse<YouTubeChannelSearchItem>>('/search', {
-                params: {
-                    part: 'snippet',
-                    type: 'channel',
-                    q: query,
-                    maxResults: Math.min(this.maxResults, 25) // Search endpoint has lower limits
+            // Get search results from Python service (0 API quota)
+            const searchResults = await this.searchService!.searchChannels(query, Math.min(this.maxResults, 25));
+
+            if (searchResults.length === 0) {
+                return [];
+            }
+
+            // Extract video IDs to get channel IDs
+            const videoIds = SearchService.extractVideoIds(searchResults);
+
+            // Get video details to extract channel IDs (1 unit per 50 videos)
+            const videoDetails = await this.getVideoDetails(videoIds);
+
+            // Extract unique channel IDs
+            const channelIds = [...new Set(videoDetails.map(video => video.channelId))];
+
+            if (channelIds.length === 0) {
+                return [];
+            }
+
+            // Get full channel details (1 unit per channel)
+            const channels = await this.getChannelsByIds(channelIds);
+
+            // Sort channels by relevance (based on search result confidence)
+            const channelRelevanceMap = new Map<string, number>();
+
+            // Map video channels to search result confidence
+            videoDetails.forEach(video => {
+                const searchResult = searchResults.find(sr => sr.videoId === video.id);
+                if (searchResult) {
+                    const currentConfidence = channelRelevanceMap.get(video.channelId) || 0;
+                    channelRelevanceMap.set(video.channelId, Math.max(currentConfidence, searchResult.confidence));
                 }
             });
 
-            this.validateResponse(response.data, ['items']);
+            // Sort channels by confidence score
+            channels.sort((a, b) => {
+                const confidenceA = channelRelevanceMap.get(a.id) || 0;
+                const confidenceB = channelRelevanceMap.get(b.id) || 0;
+                return confidenceB - confidenceA;
+            });
+
+            // Cache the results for 24 hours
+            this.cache.setVideos(cacheKey, channels as unknown as Video[], 24 * 60 * 60 * 1000);
+
+            return channels;
+
+        } catch (error) {
+            throw this.handleError(error);
+        }
+    }
+
+    /**
+     * Search channels using direct YouTube API (100 API quota)
+     * @param query - Search query
+     * @param cacheKey - Cache key for storing results
+     * @returns Array of channels
+     */
+    private async searchChannelsViaAPI(query: string, cacheKey: string): Promise<Channel[]> {
+        try {
+            const response = await this.makeAPIRequest<YouTubeAPIResponse<YouTubeChannelSearchItem>>('/search', {
+                part: 'snippet',
+                type: 'channel',
+                q: query,
+                maxResults: Math.min(this.maxResults, 25) // Search endpoint has lower limits
+            });
+
+            this.validateResponse(response, ['items']);
 
             // Extract channel IDs to fetch full details
-            const channelIds = response.data.items.map(item => item.id.channelId);
+            const channelIds = response.items.map(item => item.id.channelId);
 
             if (channelIds.length === 0) {
                 return [];
@@ -138,20 +242,18 @@ export class YouTubeAPIClient {
         }
 
         try {
-            const response = await this.axiosInstance.get<YouTubeAPIResponse<YouTubeChannelItem>>('/channels', {
-                params: {
-                    part: 'snippet,statistics,contentDetails',
-                    id: channelId
-                }
+            const response = await this.makeAPIRequest<YouTubeAPIResponse<YouTubeChannelItem>>('/channels', {
+                part: 'snippet,statistics,contentDetails',
+                id: channelId
             });
 
-            this.validateResponse(response.data, ['items']);
+            this.validateResponse(response, ['items']);
 
-            if (response.data.items.length === 0) {
+            if (response.items.length === 0) {
                 throw this.createAPIError(404, 'Channel not found', 'The channel you requested could not be found', false);
             }
 
-            const item = response.data.items[0];
+            const item = response.items[0];
             const channel = this.mapChannelItem(item);
 
             // Cache the channel
@@ -195,18 +297,16 @@ export class YouTubeAPIClient {
             publishedAfter.setDate(publishedAfter.getDate() - this.videoTimeWindowDays);
 
             // Fetch videos from the uploads playlist
-            const response = await this.axiosInstance.get<YouTubeAPIResponse<YouTubePlaylistItem>>('/playlistItems', {
-                params: {
-                    part: 'snippet',
-                    playlistId: channel.uploadsPlaylistId,
-                    maxResults: limit
-                }
+            const response = await this.makeAPIRequest<YouTubeAPIResponse<YouTubePlaylistItem>>('/playlistItems', {
+                part: 'snippet',
+                playlistId: channel.uploadsPlaylistId,
+                maxResults: limit
             });
 
-            this.validateResponse(response.data, ['items']);
+            this.validateResponse(response, ['items']);
 
             // Filter videos by date and extract video IDs
-            const videoIds = response.data.items
+            const videoIds = response.items
                 .filter(item => {
                     const publishedDate = new Date(item.snippet.publishedAt);
                     return publishedDate >= publishedAfter;
@@ -254,22 +354,38 @@ export class YouTubeAPIClient {
             const allVideos: Video[] = [];
 
             for (const batch of batches) {
-                const response = await this.axiosInstance.get<YouTubeAPIResponse<YouTubeVideoItem>>('/videos', {
-                    params: {
-                        part: 'snippet,contentDetails',
-                        id: batch.join(',')
-                    }
+                const response = await this.makeAPIRequest<YouTubeAPIResponse<YouTubeVideoItem>>('/videos', {
+                    part: 'snippet,contentDetails',
+                    id: batch.join(',')
                 });
 
-                this.validateResponse(response.data, ['items']);
+                this.validateResponse(response, ['items']);
 
-                const videos = response.data.items.map(item => this.mapVideoItem(item));
+                const videos = response.items.map(item => this.mapVideoItem(item));
                 allVideos.push(...videos);
             }
 
             return allVideos;
         } catch (error) {
             throw this.handleError(error);
+        }
+    }
+
+    /**
+     * Makes an API request to YouTube Data API v3
+     * @param endpoint - API endpoint path
+     * @param params - Request parameters
+     * @returns API response data
+     */
+    private async makeAPIRequest<T>(endpoint: string, params: Record<string, any>): Promise<T> {
+        try {
+            const response = await this.axiosInstance.get<T>(endpoint, {
+                params: params
+            });
+
+            return response.data;
+        } catch (error) {
+            throw error;
         }
     }
 
@@ -284,16 +400,14 @@ export class YouTubeAPIClient {
         }
 
         try {
-            const response = await this.axiosInstance.get<YouTubeAPIResponse<YouTubeChannelItem>>('/channels', {
-                params: {
-                    part: 'snippet,statistics,contentDetails',
-                    id: channelIds.join(',')
-                }
+            const response = await this.makeAPIRequest<YouTubeAPIResponse<YouTubeChannelItem>>('/channels', {
+                part: 'snippet,statistics,contentDetails',
+                id: channelIds.join(',')
             });
 
-            this.validateResponse(response.data, ['items']);
+            this.validateResponse(response, ['items']);
 
-            return response.data.items.map(item => this.mapChannelItem(item));
+            return response.items.map(item => this.mapChannelItem(item));
         } catch (error) {
             throw this.handleError(error);
         }

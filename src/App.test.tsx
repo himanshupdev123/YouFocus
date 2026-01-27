@@ -58,17 +58,27 @@ vi.mock('./services/YouTubeAPIClient', () => {
 });
 
 describe('App', () => {
+    const originalEnv = import.meta.env.VITE_YOUTUBE_API_KEY;
+
     beforeEach(() => {
         // Clear all mocks before each test
         vi.clearAllMocks();
+    });
 
-        // Set up environment variable for API key (valid format)
-        import.meta.env.VITE_YOUTUBE_API_KEY = 'AIzaSyC1234567890123456789012345678901';
+    afterEach(() => {
+        // Restore original environment
+        Object.defineProperty(import.meta, 'env', {
+            value: { ...import.meta.env, VITE_YOUTUBE_API_KEY: originalEnv },
+            writable: true
+        });
     });
 
     it('should show onboarding screen for first-time users', async () => {
-        // Set a valid API key
-        import.meta.env.VITE_YOUTUBE_API_KEY = 'AIzaSyC1234567890123456789012345678901';
+        // Mock environment with valid API key
+        Object.defineProperty(import.meta, 'env', {
+            value: { ...import.meta.env, VITE_YOUTUBE_API_KEY: 'AIzaSyC1234567890123456789012345678901' },
+            writable: true
+        });
 
         render(<App />);
 
@@ -79,8 +89,11 @@ describe('App', () => {
     });
 
     it('should show API key error when API key is not configured', async () => {
-        // Remove API key
-        import.meta.env.VITE_YOUTUBE_API_KEY = '';
+        // Mock environment with empty API key
+        Object.defineProperty(import.meta, 'env', {
+            value: { ...import.meta.env, VITE_YOUTUBE_API_KEY: '' },
+            writable: true
+        });
 
         render(<App />);
 
@@ -91,8 +104,5 @@ describe('App', () => {
 
         // Should show instructions
         expect(screen.getByText(/how to set up your youtube api key/i)).toBeInTheDocument();
-
-        // Restore API key for other tests
-        import.meta.env.VITE_YOUTUBE_API_KEY = 'AIzaSyC1234567890123456789012345678901';
     });
 });
