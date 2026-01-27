@@ -6,10 +6,10 @@
     "framework": "vite",
     "functions": {
         "api/search/channels.py": {
-            "runtime": "python3.9"
+            "runtime": "python3.11"
         },
         "api/search/videos.py": {
-            "runtime": "python3.9"
+            "runtime": "python3.11"
         }
     },
     "rewrites": [
