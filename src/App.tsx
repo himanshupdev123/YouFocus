@@ -48,15 +48,20 @@ function App() {
     const searchService = getSearchServiceConfig();
     const useSearchService = shouldUseSearchService();
 
+    // Get video filtering configuration
+    const filterVideosByDate = import.meta.env.VITE_FILTER_VIDEOS_BY_DATE === 'true';
+
     console.log('Initializing YouTubeAPIClient with search service:', {
       searchServiceEnabled: useSearchService,
-      searchServiceUrl: searchService?.baseUrl
+      searchServiceUrl: searchService?.baseUrl,
+      filterVideosByDate
     });
 
     return new YouTubeAPIClient({
       apiKey,
       searchService,
-      useSearchService
+      useSearchService,
+      filterVideosByDate
     });
   }, []);
 

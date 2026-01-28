@@ -34,6 +34,8 @@ export interface YouTubeAPIClientConfig {
     maxResults?: number;
     /** Time window for fetching videos in days (default: 30) */
     videoTimeWindowDays?: number;
+    /** Whether to filter videos by date window (default: false) */
+    filterVideosByDate?: boolean;
     /** Search service configuration for quota optimization */
     searchService?: SearchServiceConfig;
     /** Whether to use search service for channel searches (default: true) */
@@ -49,6 +51,7 @@ export class YouTubeAPIClient {
     private readonly axiosInstance: AxiosInstance;
     private readonly maxResults: number;
     private readonly videoTimeWindowDays: number;
+    private readonly filterVideosByDate: boolean;
     private readonly baseURL = 'https://www.googleapis.com/youtube/v3';
     private readonly searchService?: SearchService;
     private readonly useSearchService: boolean;
@@ -66,6 +69,7 @@ export class YouTubeAPIClient {
         this.cache = config.cache ?? new APICache();
         this.maxResults = config.maxResults ?? 50;
         this.videoTimeWindowDays = config.videoTimeWindowDays ?? 30;
+        this.filterVideosByDate = config.filterVideosByDate ?? false;
         this.useSearchService = config.useSearchService ?? true;
 
         // Initialize search service if configured
@@ -261,23 +265,25 @@ export class YouTubeAPIClient {
     }
 
     /**
-     * Gets recent videos from a channel's uploads playlist
+     * Gets videos from a channel's uploads playlist
      * Uses playlistItems.list endpoint (cost: 1 unit per request)
      * 
      * @param channelId - YouTube channel ID
      * @param maxResults - Maximum number of videos to fetch (default: 50)
+     * @param filterByDate - Whether to filter videos by date window (overrides config default)
      * @returns Array of videos from the channel
      * @throws APIError if the request fails
      */
-    async getChannelVideos(channelId: string, maxResults?: number): Promise<Video[]> {
+    async getChannelVideos(channelId: string, maxResults?: number, filterByDate?: boolean): Promise<Video[]> {
         if (!channelId || channelId.trim().length === 0) {
             throw this.createAPIError(400, 'Channel ID cannot be empty', 'Please provide a valid channel ID', false);
         }
 
         const limit = maxResults ?? this.maxResults;
+        const shouldFilterByDate = filterByDate ?? this.filterVideosByDate;
 
-        // Check cache first
-        const cacheKey = `videos:${channelId}:${limit}`;
+        // Check cache first - include filterByDate in cache key
+        const cacheKey = `videos:${channelId}:${limit}:${shouldFilterByDate}`;
         const cachedVideos = this.cache.getVideos(cacheKey);
         if (cachedVideos) {
             return cachedVideos;
@@ -286,10 +292,6 @@ export class YouTubeAPIClient {
         try {
             // First, get the channel info to get the uploads playlist ID
             const channel = await this.getChannelInfo(channelId);
-
-            // Calculate the date threshold for filtering videos
-            const publishedAfter = new Date();
-            publishedAfter.setDate(publishedAfter.getDate() - this.videoTimeWindowDays);
 
             // Fetch videos from the uploads playlist
             const response = await this.makeAPIRequest<YouTubeAPIResponse<YouTubePlaylistItem>>('/playlistItems', {
@@ -300,13 +302,24 @@ export class YouTubeAPIClient {
 
             this.validateResponse(response, ['items']);
 
-            // Filter videos by date and extract video IDs
-            const videoIds = response.items
-                .filter(item => {
-                    const publishedDate = new Date(item.snippet.publishedAt);
-                    return publishedDate >= publishedAfter;
-                })
-                .map(item => item.snippet.resourceId.videoId);
+            let videoIds: string[];
+
+            if (shouldFilterByDate) {
+                // Calculate the date threshold for filtering videos
+                const publishedAfter = new Date();
+                publishedAfter.setDate(publishedAfter.getDate() - this.videoTimeWindowDays);
+
+                // Filter videos by date and extract video IDs
+                videoIds = response.items
+                    .filter(item => {
+                        const publishedDate = new Date(item.snippet.publishedAt);
+                        return publishedDate >= publishedAfter;
+                    })
+                    .map(item => item.snippet.resourceId.videoId);
+            } else {
+                // Get all videos without date filtering
+                videoIds = response.items.map(item => item.snippet.resourceId.videoId);
+            }
 
             if (videoIds.length === 0) {
                 return [];
